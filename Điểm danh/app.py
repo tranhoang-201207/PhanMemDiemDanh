@@ -9,8 +9,6 @@ app = Flask(__name__)
 
 # --- CẤU HÌNH API GEMINI ---
 client = genai.Client(api_key="AIzaSyD2thItqgXpq9yohNTafoZAsKgBMSketzE")
-
-# Tuyến đường 1: Chỉ để mở giao diện
 @app.route('/')
 def trang_chu():
     return render_template('index.html')
