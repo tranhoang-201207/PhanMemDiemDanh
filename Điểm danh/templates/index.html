@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Điểm Danh AI Tự Động</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f9; margin: 0; padding: 20px; }
+        /* Khung hiển thị camera */
+        #video { width: 100%; max-width: 400px; border-radius: 10px; border: 3px solid #0056b3; background-color: black; }
+        /* Nút bấm */
+        #capture-btn { background-color: #28a745; color: white; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; max-width: 400px; }
+        #capture-btn:disabled { background-color: #cccccc; }
+        /* Khu vực hiển thị kết quả */
+        #result { margin-top: 20px; font-size: 18px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>📸 Đưa thẻ vào khung hình</h2>
+    
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    
+    <br>
+    <button id="capture-btn">CHỤP & TỰ ĐỘNG QUÉT</button>
+    
+    <div id="result"></div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('capture-btn');
+        const resultDiv = document.getElementById('result');
+
+        // YÊU CẦU QUYỀN MỞ CAMERA SAU CỦA ĐIỆN THOẠI
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => { 
+                video.srcObject = stream; 
+            })
+            .catch(err => {
+                resultDiv.innerHTML = "<span style='color:red;'>Lỗi: Không thể mở camera. Vui lòng cấp quyền!</span>";
+            });
+
+        // KHI BẤM NÚT "CHỤP & QUÉT"
+        captureBtn.addEventListener('click', () => {
+            captureBtn.disabled = true;
+            captureBtn.innerText = "⚡ Đang gửi tốc độ cao...";
+            resultDiv.innerHTML = "<span style='color:blue;'>Hệ thống đang xử lý...</span>";
+
+            // --- BẮT ĐẦU ÉP CÂN ẢNH ---
+            // 1. Giới hạn chiều ngang bức ảnh tối đa chỉ 800 pixel (thay vì 4000px)
+            const MAX_WIDTH = 800;
+            const scale = MAX_WIDTH / video.videoWidth;
+            
+            canvas.width = MAX_WIDTH;
+            canvas.height = video.videoHeight * scale;
+
+            // 2. Vẽ bức ảnh thu nhỏ lên canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // 3. Nén thành file JPEG với chất lượng 70% (0.7) để giảm dung lượng
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append('anh_the', blob, 'capture.jpg');
+
+                // Gửi ảnh về đường dẫn '/quet' của Python
+                fetch('/quet', { method: 'POST', body: formData })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultDiv.innerHTML = `<span style='color:green;'>✅ ${data.message}</span>`;
+                    } else {
+                        resultDiv.innerHTML = `<span style='color:red;'>❌ ${data.message}</span>`;
+                    }
+                })
+                .catch(err => {
+                    resultDiv.innerHTML = "<span style='color:red;'>Lỗi kết nối đến máy chủ!</span>";
+                })
+                .finally(() => {
+                    captureBtn.disabled = false;
+                    captureBtn.innerText = "CHỤP & TỰ ĐỘNG QUÉT";
+                });
+                
+            }, 'image/jpeg', 0.7); // <--- Số 0.7 chính là bí quyết ép cân (70% chất lượng)
+        });
+    </script>
+</body>
+</html>
