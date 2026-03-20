@@ -2,8 +2,8 @@ from flask import Flask, request, render_template, jsonify
 from google import genai
 from PIL import Image
 import re
-import csv
 from datetime import datetime
+import requests # <--- Đã chèn thêm thư viện này để gửi thư lên Google
 
 app = Flask(__name__)
 
@@ -42,9 +42,19 @@ def quet_the():
             mssv = danh_sach_mssv[0]
             thoi_gian = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
-            with open('danh_sach_diem_danh.csv', mode='a', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow([mssv, thoi_gian])
+            # -----------------------------------------------------------------
+            # CHỖ VỪA CHÈN: ĐÃ XÓA CODE LƯU CSV CŨ VÀ THAY BẰNG CODE GOOGLE SHEETS
+            # -----------------------------------------------------------------
+            URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbycEsvk1fHl19k5zH1E0X121VbHls1V9I25vQvFjWfA8m0B28p-JmC01t0j0F7XF2Pz/exec"
+            
+            payload = {
+                "mssv": mssv,
+                "thoi_gian": thoi_gian
+            }
+            
+            # Bắn dữ liệu lên Đám mây
+            requests.post(URL_GOOGLE_SHEETS, json=payload)
+            # -----------------------------------------------------------------
                 
             return jsonify({'success': True, 'message': f'Lưu thành công MSSV: {mssv}'})
         else:
@@ -54,5 +64,5 @@ def quet_the():
         return jsonify({'success': False, 'message': f'Lỗi: {e}'})
 
 if __name__ == '__main__':
-    # Đã xóa dòng cũ, chỉ dùng dòng có ssl_context='adhoc'
-    app.run(host='0.0.0.0', port=5000, debug=True, ssl_context='adhoc')
+    # Chỉ cần thế này là đủ, Render sẽ tự lo phần còn lại
+    app.run(host='0.0.0.0', port=5000)
