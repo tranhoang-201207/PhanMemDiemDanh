@@ -11,8 +11,8 @@ app = Flask(__name__)
 client = genai.Client(api_key="AIzaSyD2thItqgXpq9yohNTafoZAsKgBMSketzE")
 
 @app.route('/')
-def trang_chu():
-    return render_template('index.html')
+def trang_chu():              # <--- Cha đứng ngoài
+    return render_template()  # <--- Con phải lùi vào trong (thụt sang phải 4 phím cách)
 
 @app.route('/quet', methods=['POST'])
 def quet_the():
